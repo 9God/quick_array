@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-enum ErrDefine {
+pub enum ErrDefine {
     InvalidIndex = 1,
     ArrayIsFull = 2,
     ArrayIsEmpty = 3,
@@ -17,13 +17,12 @@ struct QuickElement<T: Sized + Default + Copy + Debug> {
 }
 
 #[derive(Debug)]
-struct QuickArray<T: Sized + Default + Copy + Debug> {
-    max_length: u32,
+pub struct QuickArray<T: Sized + Default + Copy + Debug> {
+    max_size: u32,
     free_head: u32,
     valid_head: u32,
     valid_tail: u32,
     valid_count: u32,
-    cur_iter_index: u32,
     internal_vec: Vec<QuickElement<T>>,
 }
 
@@ -33,13 +32,12 @@ impl<T: Sized + Default + Copy + Debug> QuickArray<T> {
     pub fn new(max_len: u32) -> Self {
         assert!(max_len < Self::INVALID_INDEX, "Quick array is too large to init!");
         let mut new_array = Self {
-            max_length: max_len,
+            max_size: max_len,
             internal_vec: Vec::with_capacity(max_len as usize),
             free_head: 0,
             valid_head: Self::INVALID_INDEX,
             valid_tail: Self::INVALID_INDEX,
             valid_count: 0,
-            cur_iter_index: Self::INVALID_INDEX,
         };
 
         for _ in 0..max_len {
@@ -55,25 +53,25 @@ impl<T: Sized + Default + Copy + Debug> QuickArray<T> {
     }
 
     pub fn get_max_size(&self) -> u32 {
-        self.max_length
+        self.max_size
     }
 
-    pub fn get_head_element(&self) -> Option<&QuickElement<T>> {
+    pub fn get_head_element(&self) -> Option<&T> {
         match self.valid_head {
             Self::INVALID_INDEX => None,
-            _ => Some(&(self.internal_vec[self.valid_head as usize]))
+            _ => Some(&(self.internal_vec[self.valid_head as usize].data))
         }
     }
 
-    pub fn get_tail_element(&self) -> Option<&QuickElement<T>> {
+    pub fn get_tail_element(&self) -> Option<&T> {
         match self.valid_tail {
             Self::INVALID_INDEX => None,
-            _ => Some(&(self.internal_vec[self.valid_tail as usize]))
+            _ => Some(&(self.internal_vec[self.valid_tail as usize].data))
         }
     }
 
-    pub fn get_element(&self, index: u32) -> Option<&QuickElement<T>> {
-        if index >= self.max_length {
+    pub fn get_element(&self, index: u32) -> Option<&T> {
+        if index >= self.max_size {
             return None;
         }
 
@@ -81,12 +79,12 @@ impl<T: Sized + Default + Copy + Debug> QuickArray<T> {
         if !e.valid {
             None
         } else {
-            Some(&e)
+            Some(&e.data)
         }
     }
 
     pub fn get_next_index(&self, index: u32) -> Option<u32> {
-        if index >= self.max_length {
+        if index >= self.max_size {
             return None;
         }
 
@@ -99,7 +97,7 @@ impl<T: Sized + Default + Copy + Debug> QuickArray<T> {
     }
 
     pub fn insert_after(&mut self, index: u32, data: &T) -> Result<u32, ErrDefine> {
-        if index >= self.max_length {
+        if index >= self.max_size {
             return Err(ErrDefine::InvalidIndex);
         }
 
@@ -143,7 +141,6 @@ impl<T: Sized + Default + Copy + Debug> QuickArray<T> {
                     self.internal_vec[free_index as usize].data = *data;
                     self.valid_tail = free_index;
                     self.valid_head = free_index;
-                    self.cur_iter_index = free_index;
                     Ok(free_index)
                 }
             }
@@ -153,7 +150,7 @@ impl<T: Sized + Default + Copy + Debug> QuickArray<T> {
     }
 
     pub fn remove_at(&mut self, index: u32) -> Result<(), ErrDefine> {
-        if index >= self.max_length {
+        if index >= self.max_size {
             return Err(ErrDefine::InvalidIndex);
         }
 
@@ -174,10 +171,6 @@ impl<T: Sized + Default + Copy + Debug> QuickArray<T> {
                 self.valid_tail = target_pre;
             }
 
-            if self.cur_iter_index == target_cur {
-                self.cur_iter_index = target_next;
-            }
-
             self.recycle_ele(target_cur);
 
             Ok(())
@@ -195,7 +188,7 @@ impl<T: Sized + Default + Copy + Debug> QuickArray<T> {
     }
 
     pub fn update_at(&mut self, index: u32, data: &T) -> Result<(), ErrDefine> {
-        if index >= self.max_length {
+        if index >= self.max_size {
             return Err(ErrDefine::InvalidIndex);
         }
 
@@ -210,47 +203,43 @@ impl<T: Sized + Default + Copy + Debug> QuickArray<T> {
         }
     }
 
-    pub fn reset_iterator(&mut self) {
-        self.cur_iter_index = self.valid_head;
-    }
-
-    pub fn expand_to(&mut self, new_length: u32) -> Result<(), ErrDefine> {
-        if new_length <= self.max_length || new_length >= Self::INVALID_INDEX {
+    pub fn expand_to(&mut self, new_size: u32) -> Result<(), ErrDefine> {
+        if new_size <= self.max_size || new_size >= Self::INVALID_INDEX {
             Err(ErrDefine::ArraySizeError)
         } else {
-            let mut expand_vec: Vec<QuickElement<T>> = Vec::with_capacity(new_length as usize);
-            for _ in 0..new_length {
+            let mut expand_vec: Vec<QuickElement<T>> = Vec::with_capacity(new_size as usize);
+            for _ in 0..new_size {
                 expand_vec.push(QuickElement::<T>::default());
             }
 
-            for i in 0..self.max_length {
+            for i in 0..self.max_size {
                 expand_vec[i as usize] = self.internal_vec[i as usize];
             }
 
-            for i in (self.max_length + 1)..(new_length - 1) {
+            for i in (self.max_size + 1)..(new_size - 1) {
                 expand_vec[i as usize].pre = i - 1;
                 expand_vec[i as usize].next = i + 1;
                 expand_vec[i as usize].cur = i;
             }
 
-            expand_vec[self.max_length as usize].pre = Self::INVALID_INDEX;
-            expand_vec[self.max_length as usize].next = self.max_length + 1;
-            expand_vec[self.max_length as usize].cur = self.max_length;
+            expand_vec[self.max_size as usize].pre = Self::INVALID_INDEX;
+            expand_vec[self.max_size as usize].next = self.max_size + 1;
+            expand_vec[self.max_size as usize].cur = self.max_size;
 
-            expand_vec[new_length as usize - 1].pre = new_length - 2;
-            expand_vec[new_length as usize - 1].next = self.free_head;
-            expand_vec[new_length as usize - 1].cur = new_length - 1;
+            expand_vec[new_size as usize - 1].pre = new_size - 2;
+            expand_vec[new_size as usize - 1].next = self.free_head;
+            expand_vec[new_size as usize - 1].cur = new_size - 1;
 
             self.internal_vec = expand_vec;
-            self.free_head = self.max_length;
-            self.max_length = new_length;
+            self.free_head = self.max_size;
+            self.max_size = new_size;
 
             Ok(())
         }
     }
 
     fn init(&mut self) {
-        for i in 1..(self.max_length - 1) {
+        for i in 1..(self.max_size - 1) {
             self.internal_vec[i as usize].pre = (i as usize - 1) as u32;
             self.internal_vec[i as usize].next = (i as usize + 1) as u32;
             self.internal_vec[i as usize].cur = i;
@@ -260,9 +249,9 @@ impl<T: Sized + Default + Copy + Debug> QuickArray<T> {
         self.internal_vec[0].next = 1;
         self.internal_vec[0].cur = 0;
 
-        self.internal_vec[self.max_length as usize - 1].pre = self.max_length - 2;
-        self.internal_vec[self.max_length as usize - 1].next = Self::INVALID_INDEX;
-        self.internal_vec[self.max_length as usize - 1].cur = self.max_length - 1;
+        self.internal_vec[self.max_size as usize - 1].pre = self.max_size - 2;
+        self.internal_vec[self.max_size as usize - 1].next = Self::INVALID_INDEX;
+        self.internal_vec[self.max_size as usize - 1].cur = self.max_size - 1;
     }
 
     fn recycle_ele(&mut self, index: u32) {
@@ -314,13 +303,13 @@ impl<T: Sized + Default + Copy + Debug> QuickArray<T> {
     }
 }
 
-struct QuickArrayIterator<'a, T: Sized + Default + Copy + Debug> {
+pub struct QuickArrayIterator<'a, T: Sized + Default + Copy + Debug> {
     pub array : &'a QuickArray<T>,
     pub index: u32,
 }
 
 impl<'a, T: Sized + Default + Copy + Debug> Iterator for QuickArrayIterator<'a, T> {
-    type Item = (u32, T);
+    type Item = (u32, &'a T);
 
     fn next(&mut self) -> Option<Self::Item> {
         let cur_ele = self.array.get_element(self.index);
@@ -333,7 +322,7 @@ impl<'a, T: Sized + Default + Copy + Debug> Iterator for QuickArrayIterator<'a, 
 
         match cur_ele {
             None => { None }
-            _ => { Some((cur_index, cur_ele.unwrap().data)) }
+            _ => { Some((cur_index, cur_ele.unwrap())) }
         }
     }
 }
@@ -415,13 +404,11 @@ mod tests {
         let result = test_array.update_at(0, 999_u32.borrow());
         display_array(&test_array);
 
-        test_array.reset_iterator();
-
         let ele = test_array.get_head_element();
-        println!("head value is {}", ele.unwrap().data);
+        println!("head value is {}", ele.unwrap());
 
         let ele = test_array.get_tail_element();
-        println!("tail value is {}", ele.unwrap().data);
+        println!("tail value is {}", ele.unwrap());
 
         display_array(&test_array);
 
