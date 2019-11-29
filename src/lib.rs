@@ -29,18 +29,18 @@ pub struct QuickArray<T: Sized + Default + Copy + Debug> {
 impl<T: Sized + Default + Copy + Debug> QuickArray<T> {
     const INVALID_INDEX: u32 = 1994090994;
 
-    pub fn new(max_len: u32) -> Self {
-        assert!(max_len < Self::INVALID_INDEX, "Quick array is too large to init!");
+    pub fn new(_max_size: u32) -> Self {
+        assert!(_max_size < Self::INVALID_INDEX, "Quick array is too large to init!");
         let mut new_array = Self {
-            max_size: max_len,
-            internal_vec: Vec::with_capacity(max_len as usize),
+            max_size: _max_size,
+            internal_vec: Vec::with_capacity(_max_size as usize),
             free_head: 0,
             valid_head: Self::INVALID_INDEX,
             valid_tail: Self::INVALID_INDEX,
             valid_count: 0,
         };
 
-        for _ in 0..max_len {
+        for _ in 0.._max_size {
             new_array.internal_vec.push(QuickElement::<T>::default());
         }
 
@@ -132,7 +132,7 @@ impl<T: Sized + Default + Copy + Debug> QuickArray<T> {
         }
     }
 
-    pub fn push(&mut self, data: &T) -> Result<u32, ErrDefine> {
+    pub fn push_back(&mut self, data: &T) -> Result<u32, ErrDefine> {
         if self.valid_tail == Self::INVALID_INDEX {
             let free_index = self.consume_ele();
             match free_index {
@@ -146,6 +146,23 @@ impl<T: Sized + Default + Copy + Debug> QuickArray<T> {
             }
         } else {
             self.insert_after(self.valid_tail, data)
+        }
+    }
+
+    pub fn push_front(&mut self, data: &T) -> Result<u32, ErrDefine> {
+        if self.valid_head == Self::INVALID_INDEX {
+            self.push_back(data)
+        } else {
+            let free_index = self.consume_ele();
+            match free_index {
+                Self::INVALID_INDEX => { Err(ErrDefine::ArrayIsFull) }
+                _ => {
+                    self.internal_vec[free_index as usize].data = *data;
+                    self.internal_vec[free_index as usize].next = self.valid_head;
+                    self.valid_head = free_index;
+                    Ok(free_index)
+                }
+            }
         }
     }
 
@@ -345,7 +362,7 @@ mod tests {
         display_array(&test_array);
 
         println!("array push 111");
-        let result: Result<u32, ErrDefine> = test_array.push(111_u32.borrow());
+        let result: Result<u32, ErrDefine> = test_array.push_back(111_u32.borrow());
         display_array(&test_array);
 
         println!("array insert 222 after 0");
@@ -376,24 +393,24 @@ mod tests {
             _ => { () }
         }
 
-        println!("array push 5 111");
-        let result: Result<u32, ErrDefine> = test_array.push(444_u32.borrow());
+        println!("array push 4 numbers");
+        let result: Result<u32, ErrDefine> = test_array.push_back(444_u32.borrow());
         display_array(&test_array);
 
-        let result: Result<u32, ErrDefine> = test_array.push(4444_u32.borrow());
+        let result: Result<u32, ErrDefine> = test_array.push_front(4444_u32.borrow());
         display_array(&test_array);
 
-        let result: Result<u32, ErrDefine> = test_array.push(44444_u32.borrow());
+        let result: Result<u32, ErrDefine> = test_array.push_back(44444_u32.borrow());
         display_array(&test_array);
 
-        let result: Result<u32, ErrDefine> = test_array.push(444444_u32.borrow());
+        let result: Result<u32, ErrDefine> = test_array.push_back(444444_u32.borrow());
         display_array(&test_array);
 
-        let result: Result<u32, ErrDefine> = test_array.push(4444444_u32.borrow());
+        let result: Result<u32, ErrDefine> = test_array.push_back(4444444_u32.borrow());
         display_array(&test_array);
 
         println!("array push 6 111");
-        let result: Result<u32, ErrDefine> = test_array.push(111_u32.borrow());
+        let result: Result<u32, ErrDefine> = test_array.push_back(111_u32.borrow());
         display_array(&test_array);
         match result {
             Err(ErrDefine::ArrayIsFull) => { println!("Array is full") }
@@ -409,17 +426,19 @@ mod tests {
 
         let ele = test_array.get_tail_element();
         println!("tail value is {}", ele.unwrap());
-
         display_array(&test_array);
 
         println!("expand array to 10");
         test_array.expand_to(10);
         display_array(&test_array);
 
-        let result: Result<u32, ErrDefine> = test_array.push(888_u32.borrow());
+        let result: Result<u32, ErrDefine> = test_array.push_back(888_u32.borrow());
         display_array(&test_array);
 
         let result: Result<(), ErrDefine> = test_array.pop_last();
+        display_array(&test_array);
+
+        test_array.push_front(666_u32.borrow());
         display_array(&test_array);
 
         for (i, e) in test_array.enumerate() {
