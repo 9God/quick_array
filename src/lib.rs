@@ -83,13 +83,26 @@ impl<T: Sized + Default + Copy + Debug> QuickArray<T> {
         }
     }
 
+    pub fn get_pre_index(&self, index: u32) -> Option<u32> {
+        if index >= self.max_size {
+            return None;
+        }
+
+        let e = &(self.internal_vec[index as usize]);
+        if !e.valid || e.pre == Self::INVALID_INDEX {
+            None
+        } else {
+            Some(e.pre)
+        }
+    }
+
     pub fn get_next_index(&self, index: u32) -> Option<u32> {
         if index >= self.max_size {
             return None;
         }
 
         let e = &(self.internal_vec[index as usize]);
-        if !e.valid {
+        if !e.valid || e.next == Self::INVALID_INDEX {
             None
         } else {
             Some(e.next)
