@@ -48,6 +48,15 @@ impl<T: Sized + Default + Copy + Debug> QuickArray<T> {
         new_array
     }
 
+    pub fn clear(&mut self) {
+        self.free_head = 0;
+        self.valid_head = Self::INVALID_INDEX;
+        self.valid_tail = Self::INVALID_INDEX;
+        self.valid_count = 0;
+
+        self.init();
+    }
+
     pub fn get_valid_count(&self) -> u32 {
         self.valid_count
     }
@@ -67,6 +76,20 @@ impl<T: Sized + Default + Copy + Debug> QuickArray<T> {
         match self.valid_tail {
             Self::INVALID_INDEX => None,
             _ => Some(&(self.internal_vec[self.valid_tail as usize].data))
+        }
+    }
+
+    pub fn get_head_index(&self) -> Option<u32> {
+        match self.valid_head {
+            Self::INVALID_INDEX => None,
+            _ => Some((self.internal_vec[self.valid_head as usize].cur))
+        }
+    }
+
+    pub fn get_tail_index(&self) -> Option<u32> {
+        match self.valid_tail {
+            Self::INVALID_INDEX => None,
+            _ => Some((self.internal_vec[self.valid_tail as usize].cur))
         }
     }
 
