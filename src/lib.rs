@@ -132,6 +132,42 @@ impl<T: Sized + Default + Copy + Debug> QuickArray<T> {
         }
     }
 
+    pub fn insert_before(&mut self, index: u32, data: &T) -> Result<u32, ErrDefine> {
+        if index >= self.max_size {
+            return Err(ErrDefine::InvalidIndex);
+        }
+
+        let target = &self.internal_vec[index as usize];
+        assert_eq!(target.cur, index, "index calculation goes wrong");
+
+        let target_valid = target.valid;
+        let target_pre = target.pre;
+        let target_cur = target.cur;
+
+        if target_valid {
+            let free_index = self.consume_ele();
+
+            match free_index {
+                Self::INVALID_INDEX => { Err(ErrDefine::ArrayIsFull) }
+                _ => {
+                    if self.valid_head == target_cur {
+                        self.valid_head = free_index;
+                    } else {
+                        self.internal_vec[target_pre as usize].next = free_index;
+                    }
+                    self.internal_vec[free_index as usize].pre = target_pre;
+                    self.internal_vec[free_index as usize].next = target_cur;
+                    self.internal_vec[free_index as usize].data = *data;
+                    self.internal_vec[target_cur as usize].pre = free_index;
+
+                    Ok(free_index)
+                }
+            }
+        } else {
+            Err(ErrDefine::InvalidIndex)
+        }
+    }
+
     pub fn insert_after(&mut self, index: u32, data: &T) -> Result<u32, ErrDefine> {
         if index >= self.max_size {
             return Err(ErrDefine::InvalidIndex);
