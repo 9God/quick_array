@@ -61,6 +61,10 @@ impl<T: Sized + Default + Copy + Debug> QuickArray<T> {
         self.valid_count
     }
 
+    pub fn is_full(&self) -> bool { self.valid_count == self.max_size }
+
+    pub fn is_empty(&self) -> bool { self.valid_count == 0 }
+
     pub fn get_max_size(&self) -> u32 {
         self.max_size
     }
