@@ -1,6 +1,7 @@
 # quick_array
 
 A memory continuous array. The operation Time complexities are:
+insert_before: O(1)
 insert_after: O(1)
 push_back: O(1)
 push_front: O(1)
