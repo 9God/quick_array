@@ -57,14 +57,22 @@ impl<T: Sized + Default + Copy + Debug> QuickArray<T> {
         self.init();
     }
 
+    #[inline]
     pub fn get_valid_count(&self) -> u32 {
         self.valid_count
     }
 
-    pub fn is_full(&self) -> bool { self.valid_count == self.max_size }
+    #[inline]
+    pub fn is_full(&self) -> bool {
+        self.valid_count == self.max_size
+    }
 
-    pub fn is_empty(&self) -> bool { self.valid_count == 0 }
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.valid_count == 0
+    }
 
+    #[inline]
     pub fn get_max_size(&self) -> u32 {
         self.max_size
     }
@@ -86,14 +94,14 @@ impl<T: Sized + Default + Copy + Debug> QuickArray<T> {
     pub fn get_head_index(&self) -> Option<u32> {
         match self.valid_head {
             Self::INVALID_INDEX => None,
-            _ => Some((self.internal_vec[self.valid_head as usize].cur))
+            _ => Some(self.internal_vec[self.valid_head as usize].cur)
         }
     }
 
     pub fn get_tail_index(&self) -> Option<u32> {
         match self.valid_tail {
             Self::INVALID_INDEX => None,
-            _ => Some((self.internal_vec[self.valid_tail as usize].cur))
+            _ => Some(self.internal_vec[self.valid_tail as usize].cur)
         }
     }
 
