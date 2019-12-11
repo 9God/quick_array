@@ -418,7 +418,7 @@ impl<'a, T: Sized + Default + Copy + Debug> Iterator for QuickArrayIterator<'a, 
         let next_index = self.array.get_next_index(self.index);
         match next_index {
             Some(i) => { self.index = i; }
-            None => {}
+            None => { self.index = QuickArray::<T>::INVALID_INDEX; }
         }
 
         match cur_ele {
