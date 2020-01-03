@@ -31,6 +31,9 @@ impl<T: Sized + Default + Copy + Debug> QuickArray<T> {
 
     pub fn new(_max_size: u32) -> Self {
         assert!(_max_size < Self::INVALID_INDEX, "Quick array is too large to init!");
+        if _max_size < 1 {
+            let _max_size = 1;
+        }
         let mut new_array = Self {
             max_size: _max_size,
             internal_vec: Vec::with_capacity(_max_size as usize),
@@ -340,19 +343,29 @@ impl<T: Sized + Default + Copy + Debug> QuickArray<T> {
     }
 
     fn init(&mut self) {
-        for i in 1..(self.max_size - 1) {
-            self.internal_vec[i as usize].pre = (i as usize - 1) as u32;
-            self.internal_vec[i as usize].next = (i as usize + 1) as u32;
-            self.internal_vec[i as usize].cur = i;
+        match self.max_size {
+            1 => {
+                self.internal_vec[0].pre = Self::INVALID_INDEX;
+                self.internal_vec[0].next = Self::INVALID_INDEX;
+                self.internal_vec[0].cur = 0;
+            },
+            _ => {
+                for i in 1..(self.max_size - 1) {
+                    self.internal_vec[i as usize].pre = (i as usize - 1) as u32;
+                    self.internal_vec[i as usize].next = (i as usize + 1) as u32;
+                    self.internal_vec[i as usize].cur = i;
+                }
+
+                self.internal_vec[0].pre = Self::INVALID_INDEX;
+                self.internal_vec[0].next = 1;
+                self.internal_vec[0].cur = 0;
+
+                self.internal_vec[self.max_size as usize - 1].pre = self.max_size - 2;
+                self.internal_vec[self.max_size as usize - 1].next = Self::INVALID_INDEX;
+                self.internal_vec[self.max_size as usize - 1].cur = self.max_size - 1;
+            }
         }
 
-        self.internal_vec[0].pre = Self::INVALID_INDEX;
-        self.internal_vec[0].next = 1;
-        self.internal_vec[0].cur = 0;
-
-        self.internal_vec[self.max_size as usize - 1].pre = self.max_size - 2;
-        self.internal_vec[self.max_size as usize - 1].next = Self::INVALID_INDEX;
-        self.internal_vec[self.max_size as usize - 1].cur = self.max_size - 1;
     }
 
     fn recycle_ele(&mut self, index: u32) {
@@ -441,6 +454,9 @@ mod tests {
 
     #[test]
     fn it_works() {
+        println!("array with 1 element init");
+        let mut test_array = QuickArray::<u32>::new(1);
+
         println!("array init");
         let mut test_array = QuickArray::<u32>::new(5);
         display_array(&test_array);
