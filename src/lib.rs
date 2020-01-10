@@ -1,5 +1,6 @@
 use std::fmt::Debug;
 
+#[derive(Debug)]
 pub enum ErrDefine {
     InvalidIndex = 1,
     ArrayIsFull = 2,
