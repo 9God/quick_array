@@ -247,6 +247,7 @@ impl<T: Sized + Default + Copy + Debug> QuickArray<T> {
                 _ => {
                     self.internal_vec[free_index as usize].data = *data;
                     self.internal_vec[free_index as usize].next = self.valid_head;
+                    self.internal_vec[self.valid_head as usize].pre = free_index;
                     self.valid_head = free_index;
                     Ok(free_index)
                 }
