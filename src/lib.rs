@@ -448,6 +448,8 @@ impl<'a, T: Sized + Default + Copy + Debug> Iterator for QuickArrayIterator<'a, 
 mod tests {
     use crate::*;
     use std::borrow::Borrow;
+    use std::fmt::Debug;
+    use crate::quick_array::ErrDefine;
 
     fn display_array<T: Sized + Default + Copy + Debug>(array: &QuickArray<T>) {
         println!("{:?}", array);
@@ -545,6 +547,77 @@ mod tests {
 
         for (i, e) in test_array.enumerate() {
             println!("{}:{}", i, e)
+        }
+    }
+
+    #[test]
+    fn test_lru(){
+        const LRU_LEN:u32=3;
+        let mut array_obj= QuickArray::<i32>::new(LRU_LEN);
+        let mut push_fn=|val: i32|{
+            if array_obj.is_full(){
+                {
+                    let last_item= array_obj.get_tail_element().unwrap();
+                    assert_eq!(*last_item, val-(LRU_LEN as i32));
+                }
+                array_obj.pop_last().expect("pop last error");
+            }
+
+            array_obj.push_front(&val).expect("push error");
+            if val>=LRU_LEN as i32{
+                assert_eq!( array_obj.get_valid_count(),LRU_LEN);
+            }else{
+                assert_eq!( array_obj.get_valid_count(),val as u32);
+            }
+        };
+
+        push_fn(1);
+        push_fn(2);
+        push_fn(3);
+        push_fn(4);
+        push_fn(5);
+        push_fn(6);
+        push_fn(7);
+        push_fn(8);
+        push_fn(9);
+        push_fn(10);
+    }
+
+    #[test]
+    fn test_normal(){
+        const LRU_LEN:u32=5;
+        // 缓存未满的情况
+        let total_data=vec![1,2];
+        let mut array_obj= QuickArray::<i32>::new(LRU_LEN);
+        for item in &total_data{
+            array_obj.push_front(item).expect("push error");
+        }
+        let array_val:Vec<i32>= array_obj.enumerate().map(|item|*item.1) .collect();
+        assert_eq!(total_data.len(),array_val.len());
+        assert_eq!(total_data.len(),array_obj.get_valid_count() as usize);
+        for index in 0..array_val.len(){
+            assert_eq!(array_val[index],total_data[total_data.len()-index-1])
+        }
+
+        // 清空测试
+        array_obj.clear();
+        assert_eq!(array_obj.get_valid_count(),0);
+        let array_val:Vec<i32>= array_obj.enumerate().map(|item|*item.1) .collect();
+        assert_eq!(array_val.len(),0);
+
+        // 链满的情况
+        let total_data=vec![1,2,3,4,5,6,7,8,9];
+        for item in &total_data{
+            if array_obj.is_full(){
+                array_obj.pop_last().expect("pop error");
+            }
+            array_obj.push_front(item).expect("push error");
+        }
+        let array_val:Vec<i32>= array_obj.enumerate().map(|item|*item.1) .collect();
+        assert_eq!(array_val.len(),LRU_LEN as usize);
+        assert_eq!(array_obj.get_valid_count (),LRU_LEN);
+        for index in 0..array_val.len(){
+            assert_eq!(array_val[index],total_data[total_data.len()-index-1])
         }
     }
 }
